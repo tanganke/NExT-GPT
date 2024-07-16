@@ -6,20 +6,22 @@ Adapted from salesforce@LAVIS. Below is the original copyright:
  For full license text, see the LICENSE_Lavis file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 """
 import contextlib
+import datetime
 import logging
 import os
 import time
-import datetime
 
 import torch
-import torch.nn as nn
 import torch.distributed as dist
+import torch.nn as nn
 import torch.nn.functional as F
 
 from .common import dist_utils
+
 # from video_llama.common.dist_utils import download_cached_file
 # from .common.utils import is_url
 from .common.logger import MetricLogger
+
 # from video_llama.models.base_model import BaseModel
 # from video_llama.models.Qformer import BertConfig, BertLMHeadModel
 # from video_llama.models.eva_vit import create_eva_vit_g

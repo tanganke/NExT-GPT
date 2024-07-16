@@ -13,32 +13,38 @@
 #    limitations under the License.
 
 import copy
-import os
 import json
+import os
+
 import numpy as np
-from torch.utils.data import Dataset
-from .base_dataset import BaseDataset
-from tqdm import tqdm
 import pandas as pd
-from .utils import process_caption
 import torch
+from torch.utils.data import Dataset
+from tqdm import tqdm
+
+from .base_dataset import BaseDataset
+from .utils import process_caption
 
 
 class WebvidDataset(BaseDataset):
     """webvid Dataset with video-text pairs."""
 
-    def __init__(self, data_path: str, mm_root_path: str, embed_path: str, dataset_type: str):
-        super(WebvidDataset, self).__init__(data_path, mm_root_path, embed_path, dataset_type)
+    def __init__(
+        self, data_path: str, mm_root_path: str, embed_path: str, dataset_type: str
+    ):
+        super(WebvidDataset, self).__init__(
+            data_path, mm_root_path, embed_path, dataset_type
+        )
         self.embed_path = embed_path
 
-        print('Load WebVid dataset ...')
+        print("Load WebVid dataset ...")
         self.mm_path_list, self.caption_list = [], []
-        with open(data_path, 'r', encoding='utf-8') as f:
+        with open(data_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         for row in tqdm(data, total=len(data)):
             video_id, one_caption = row["video_name"], row["caption"]
             self.mm_path_list.append(os.path.join(mm_root_path, video_id))
             self.caption_list.append(process_caption(one_caption))
 
-        print(f'[!] collect {len(self.mm_path_list)} samples for training')
+        print(f"[!] collect {len(self.mm_path_list)} samples for training")
         self.dataset_type_list = [dataset_type for _ in range(len(self.caption_list))]

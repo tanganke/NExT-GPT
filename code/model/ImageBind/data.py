@@ -5,21 +5,20 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import logging
 import math
 
 import torch
 import torch.nn as nn
 import torchaudio
-import logging
-
-from .models.multimodal_preprocessors import SimpleTokenizer
 from PIL import Image
 from pytorchvideo import transforms as pv_transforms
 from pytorchvideo.data.clip_sampling import ConstantClipsPerVideoSampler
 from pytorchvideo.data.encoded_video import EncodedVideo
-
 from torchvision import transforms
 from torchvision.transforms._transforms_video import NormalizeVideo
+
+from .models.multimodal_preprocessors import SimpleTokenizer
 
 DEFAULT_AUDIO_FRAME_SHIFT_MS = 10  # in milliseconds
 
@@ -169,7 +168,7 @@ def load_and_transform_audio_data(
         for clip_timepoints in all_clips_timepoints:
             waveform_clip = waveform[
                 :,
-                int(clip_timepoints[0] * sample_rate): int(
+                int(clip_timepoints[0] * sample_rate) : int(
                     clip_timepoints[1] * sample_rate
                 ),
             ]

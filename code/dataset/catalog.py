@@ -95,7 +95,6 @@ class DatasetCatalog:
                 data_path="../data/IT_data/T-T+X_data/image_t2x.json",
                 embed_path="./embed/",
                 dataset_type="TextToImage",
-
             ),
         }
 

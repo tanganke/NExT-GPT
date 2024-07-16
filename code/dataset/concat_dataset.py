@@ -1,4 +1,5 @@
 from torch.utils.data import ConcatDataset, Dataset
+
 from .catalog import DatasetCatalog
 from .utils import instantiate_from_config
 
@@ -13,8 +14,8 @@ class MyConcatDataset(Dataset):
         for dataset_idx, dataset_name in enumerate(dataset_name_list):
             dataset_dict = getattr(catalog, dataset_name)
 
-            target = dataset_dict['target']
-            params = dataset_dict['params']
+            target = dataset_dict["target"]
+            params = dataset_dict["params"]
             print(target)
             print(params)
             dataset = instantiate_from_config(dict(target=target, params=params))

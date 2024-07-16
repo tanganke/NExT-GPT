@@ -18,13 +18,21 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 import torch
 import torch.nn.functional as F
-from transformers import ClapTextModelWithProjection, RobertaTokenizer, RobertaTokenizerFast, SpeechT5HifiGan
-
 from diffusers.models import AutoencoderKL, UNet2DConditionModel
-from diffusers.schedulers import KarrasDiffusionSchedulers
-from diffusers.utils import is_accelerate_available, logging, randn_tensor, replace_example_docstring
 from diffusers.pipelines.pipeline_utils import AudioPipelineOutput, DiffusionPipeline
-
+from diffusers.schedulers import KarrasDiffusionSchedulers
+from diffusers.utils import (
+    is_accelerate_available,
+    logging,
+    randn_tensor,
+    replace_example_docstring,
+)
+from transformers import (
+    ClapTextModelWithProjection,
+    RobertaTokenizer,
+    RobertaTokenizerFast,
+    SpeechT5HifiGan,
+)
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -121,7 +129,12 @@ class AudioLDMPipeline(DiffusionPipeline):
 
         device = torch.device(f"cuda:{gpu_id}")
 
-        for cpu_offloaded_model in [self.unet, self.text_encoder, self.vae, self.vocoder]:
+        for cpu_offloaded_model in [
+            self.unet,
+            self.text_encoder,
+            self.vae,
+            self.vocoder,
+        ]:
             cpu_offload(cpu_offloaded_model, device)
 
     @property
@@ -194,11 +207,13 @@ class AudioLDMPipeline(DiffusionPipeline):
             )
             text_input_ids = text_inputs.input_ids
             attention_mask = text_inputs.attention_mask
-            untruncated_ids = self.tokenizer(prompt, padding="longest", return_tensors="pt").input_ids
+            untruncated_ids = self.tokenizer(
+                prompt, padding="longest", return_tensors="pt"
+            ).input_ids
 
-            if untruncated_ids.shape[-1] >= text_input_ids.shape[-1] and not torch.equal(
-                text_input_ids, untruncated_ids
-            ):
+            if untruncated_ids.shape[-1] >= text_input_ids.shape[
+                -1
+            ] and not torch.equal(text_input_ids, untruncated_ids):
                 removed_text = self.tokenizer.batch_decode(
                     untruncated_ids[:, self.tokenizer.model_max_length - 1 : -1]
                 )
@@ -270,10 +285,16 @@ class AudioLDMPipeline(DiffusionPipeline):
             # duplicate unconditional embeddings for each generation per prompt, using mps friendly method
             seq_len = negative_prompt_embeds.shape[1]
 
-            negative_prompt_embeds = negative_prompt_embeds.to(dtype=self.text_encoder.dtype, device=device)
+            negative_prompt_embeds = negative_prompt_embeds.to(
+                dtype=self.text_encoder.dtype, device=device
+            )
 
-            negative_prompt_embeds = negative_prompt_embeds.repeat(1, num_waveforms_per_prompt)
-            negative_prompt_embeds = negative_prompt_embeds.view(batch_size * num_waveforms_per_prompt, seq_len)
+            negative_prompt_embeds = negative_prompt_embeds.repeat(
+                1, num_waveforms_per_prompt
+            )
+            negative_prompt_embeds = negative_prompt_embeds.view(
+                batch_size * num_waveforms_per_prompt, seq_len
+            )
 
             # For classifier free guidance, we need to do two forward passes.
             # Here we concatenate the unconditional and text embeddings into a single batch
@@ -303,13 +324,17 @@ class AudioLDMPipeline(DiffusionPipeline):
         # eta corresponds to η in DDIM paper: https://arxiv.org/abs/2010.02502
         # and should be between [0, 1]
 
-        accepts_eta = "eta" in set(inspect.signature(self.scheduler.step).parameters.keys())
+        accepts_eta = "eta" in set(
+            inspect.signature(self.scheduler.step).parameters.keys()
+        )
         extra_step_kwargs = {}
         if accepts_eta:
             extra_step_kwargs["eta"] = eta
 
         # check if the scheduler accepts generator
-        accepts_generator = "generator" in set(inspect.signature(self.scheduler.step).parameters.keys())
+        accepts_generator = "generator" in set(
+            inspect.signature(self.scheduler.step).parameters.keys()
+        )
         if accepts_generator:
             extra_step_kwargs["generator"] = generator
         return extra_step_kwargs
@@ -339,7 +364,8 @@ class AudioLDMPipeline(DiffusionPipeline):
             )
 
         if (callback_steps is None) or (
-            callback_steps is not None and (not isinstance(callback_steps, int) or callback_steps <= 0)
+            callback_steps is not None
+            and (not isinstance(callback_steps, int) or callback_steps <= 0)
         ):
             raise ValueError(
                 f"`callback_steps` has to be a positive integer but is {callback_steps} of type"
@@ -355,8 +381,12 @@ class AudioLDMPipeline(DiffusionPipeline):
             raise ValueError(
                 "Provide either `prompt` or `prompt_embeds`. Cannot leave both `prompt` and `prompt_embeds` undefined."
             )
-        elif prompt is not None and (not isinstance(prompt, str) and not isinstance(prompt, list)):
-            raise ValueError(f"`prompt` has to be of type `str` or `list` but is {type(prompt)}")
+        elif prompt is not None and (
+            not isinstance(prompt, str) and not isinstance(prompt, list)
+        ):
+            raise ValueError(
+                f"`prompt` has to be of type `str` or `list` but is {type(prompt)}"
+            )
 
         if negative_prompt is not None and negative_prompt_embeds is not None:
             raise ValueError(
@@ -373,7 +403,16 @@ class AudioLDMPipeline(DiffusionPipeline):
                 )
 
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionPipeline.prepare_latents with width->self.vocoder.config.model_in_dim
-    def prepare_latents(self, batch_size, num_channels_latents, height, dtype, device, generator, latents=None):
+    def prepare_latents(
+        self,
+        batch_size,
+        num_channels_latents,
+        height,
+        dtype,
+        device,
+        generator,
+        latents=None,
+    ):
         shape = (
             batch_size,
             num_channels_latents,
@@ -387,7 +426,9 @@ class AudioLDMPipeline(DiffusionPipeline):
             )
 
         if latents is None:
-            latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+            latents = randn_tensor(
+                shape, generator=generator, device=device, dtype=dtype
+            )
         else:
             latents = latents.to(device)
 
@@ -484,16 +525,27 @@ class AudioLDMPipeline(DiffusionPipeline):
             When returning a tuple, the first element is a list with the generated audios.
         """
         # 0. Convert audio input length from seconds to spectrogram height
-        vocoder_upsample_factor = np.prod(self.vocoder.config.upsample_rates) / self.vocoder.config.sampling_rate
+        vocoder_upsample_factor = (
+            np.prod(self.vocoder.config.upsample_rates)
+            / self.vocoder.config.sampling_rate
+        )
 
         if audio_length_in_s is None:
-            audio_length_in_s = self.unet.config.sample_size * self.vae_scale_factor * vocoder_upsample_factor
+            audio_length_in_s = (
+                self.unet.config.sample_size
+                * self.vae_scale_factor
+                * vocoder_upsample_factor
+            )
 
         height = int(audio_length_in_s / vocoder_upsample_factor)
 
-        original_waveform_length = int(audio_length_in_s * self.vocoder.config.sampling_rate)
+        original_waveform_length = int(
+            audio_length_in_s * self.vocoder.config.sampling_rate
+        )
         if height % self.vae_scale_factor != 0:
-            height = int(np.ceil(height / self.vae_scale_factor)) * self.vae_scale_factor
+            height = (
+                int(np.ceil(height / self.vae_scale_factor)) * self.vae_scale_factor
+            )
             logger.info(
                 f"Audio length in seconds {audio_length_in_s} is increased to {height * vocoder_upsample_factor} "
                 f"so that it can be handled by the model. It will be cut to {audio_length_in_s} after the "
@@ -565,8 +617,12 @@ class AudioLDMPipeline(DiffusionPipeline):
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
                 # expand the latents if we are doing classifier free guidance
-                latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
-                latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
+                latent_model_input = (
+                    torch.cat([latents] * 2) if do_classifier_free_guidance else latents
+                )
+                latent_model_input = self.scheduler.scale_model_input(
+                    latent_model_input, t
+                )
 
                 # predict the noise residual
                 noise_pred = self.unet(
@@ -580,13 +636,19 @@ class AudioLDMPipeline(DiffusionPipeline):
                 # perform guidance
                 if do_classifier_free_guidance:
                     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
-                    noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+                    noise_pred = noise_pred_uncond + guidance_scale * (
+                        noise_pred_text - noise_pred_uncond
+                    )
 
                 # compute the previous noisy sample x_t -> x_t-1
-                latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs).prev_sample
+                latents = self.scheduler.step(
+                    noise_pred, t, latents, **extra_step_kwargs
+                ).prev_sample
 
                 # call the callback, if provided
-                if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
+                if i == len(timesteps) - 1 or (
+                    (i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0
+                ):
                     progress_bar.update()
                     if callback is not None and i % callback_steps == 0:
                         callback(i, t, latents)
